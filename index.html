@@ -1,99 +1,622 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Omega Mart Scavenger Hunt</title>
-<style>
-  body {
-    font-family: Arial, sans-serif;
-    background-color: #fdf6f0;
-    color: #333;
-    padding: 20px;
-  }
-  h1, h2 {
-    color: #d6336c;
-  }
-  .task {
-    background: #fff0f5;
-    padding: 15px;
-    margin: 10px 0;
-    border-radius: 12px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  }
-  input[type="checkbox"] {
-    margin-right: 10px;
-    transform: scale(1.3);
-  }
-  input[type="file"] {
-    margin-top: 5px;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Omega Mart — 2‑Hour Scavenger Hunt</title>
+  <style>
+    :root {
+      --bg: #0e0f12;
+      --card: #16181d;
+      --muted: #8b94a7;
+      --text: #e9eef5;
+      --accent: #7cf5c6;
+      --accent-2: #9aa8ff;
+      --danger: #ff6b6b;
+      --ok: #7dffa7;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+      background: radial-gradient(1200px 800px at 20% -10%, #1a1e27, var(--bg));
+      color: var(--text); line-height: 1.4; -webkit-tap-highlight-color: transparent;
+    }
+
+    .wrap { max-width: 940px; margin: 0 auto; padding: 16px; }
+
+    header {
+      position: sticky; top: 0; z-index: 10; backdrop-filter: blur(10px);
+      background: linear-gradient(180deg, rgba(14,15,18,.9), rgba(14,15,18,.6));
+      padding: 12px 12px 8px; border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+
+    .bar {
+      display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center;
+      max-width: 940px; margin: 0 auto;
+    }
+
+    .title { font-size: 20px; font-weight: 800; letter-spacing: .2px; }
+
+    .pill {
+      display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px;
+      background: var(--card); box-shadow: var(--shadow); border: 1px solid rgba(255,255,255,.06);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; }
+    button, select {
+      appearance: none; border: 0; padding: 10px 14px; border-radius: 12px; font-weight: 700; cursor: pointer;
+      background: var(--accent-2); color: #0c0f16; box-shadow: var(--shadow);
+    }
+    button.ghost { background: #232734; color: var(--text); border: 1px solid rgba(255,255,255,.08); }
+    button.danger { background: var(--danger); color: #fff; }
+    button.secondary { background: var(--accent); }
+
+    .grid { display: grid; gap: 14px; margin-top: 14px; }
+
+    .card {
+      background: linear-gradient(180deg, #171a22, #12141a);
+      border: 1px solid rgba(255,255,255,.07); border-radius: var(--radius);
+      box-shadow: var(--shadow); padding: 14px;
+    }
+
+    .item { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: start; }
+    .item input[type="checkbox"] { width: 26px; height: 26px; margin-top: 2px; accent-color: #7cf5c6; }
+
+    .item-title { font-weight: 800; font-size: 16px; }
+    .meta { color: var(--muted); font-size: 13px; }
+
+    .clue-toggle { padding: 8px 10px; font-size: 13px; }
+
+    details { margin-top: 10px; }
+    summary { list-style: none; cursor: pointer; user-select: none; display: inline-flex; align-items: center; gap: 8px; }
+    summary::-webkit-details-marker { display: none; }
+
+    .clue-box {
+      margin-top: 10px; background: #0f1218; border: 1px dashed rgba(255,255,255,.12);
+      padding: 12px; border-radius: 12px; display: grid; gap: 10px;
+    }
+
+    .seg {
+      background: #1b2030; border-radius: 12px; padding: 4px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+    }
+    .seg button { background: transparent; color: var(--text); border: 1px solid transparent; font-weight: 700; padding: 8px 10px; }
+    .seg button.active { background: #2a3147; border-color: rgba(255,255,255,.1); }
+
+    .clue-text { font-size: 14px; color: #e6f0ff; }
+
+    .progress {
+      display: grid; gap: 8px; align-items: center; grid-template-columns: 1fr auto; margin-top: 8px;
+    }
+    .bar-outer { width: 100%; height: 12px; background: #1a1e28; border-radius: 999px; overflow: hidden; border: 1px solid rgba(255,255,255,.08); }
+    .bar-inner { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .25s ease; }
+
+    .footer { text-align: center; color: var(--muted); font-size: 12px; margin: 18px 0 26px; }
+
+    .toast {
+      position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
+      background: #11161f; color: var(--text); border: 1px solid rgba(255,255,255,.08);
+      padding: 10px 14px; border-radius: 12px; box-shadow: var(--shadow); display: none;
+    }
+
+    .confetti { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+    .confetti i { position: absolute; width: 8px; height: 12px; opacity: .9; animation: fall 2.2s linear forwards; }
+    @keyframes fall { to { transform: translateY(110vh) rotate(540deg); opacity: .7; } }
+
+    .hint { font-size: 12px; color: var(--muted); }
+  </style>
 </head>
 <body>
+  <header>
+    <div class="bar">
+      <div class="title">Omega Mart Scavenger Hunt <span class="hint">(2 hours)</span></div>
+      <div class="controls">
+        <div class="pill" id="timerPill">⏳ <span id="timeLeft">02:00:00</span></div>
+        <button class="secondary" id="startBtn">Start</button>
+        <button class="ghost" id="pauseBtn">Pause</button>
+        <button class="danger" id="resetBtn">Reset</button>
+      </div>
+    </div>
+  </header>
 
-<h1>📱 Omega Mart Mobile Scavenger Hunt</h1>
-<p>Check off each item as you find it and upload a photo or video!</p>
+  <div class="wrap">
+    <div class="card">
+      <div class="progress">
+        <div class="bar-outer"><div class="bar-inner" id="progressBar"></div></div>
+        <div class="pill"><span id="countDone">0</span>/<span id="countTotal">0</span> found</div>
+      </div>
+    </div>
 
-<div class="task">
-  <label><input type="checkbox"> 1️⃣ The Odd Product</label>
-  <p>Find a product that shouldn’t exist in a grocery store.</p>
-  <input type="file" accept="image/*,video/*">
-</div>
+    <div id="items" class="grid"></div>
 
-<div class="task">
-  <label><input type="checkbox"> 2️⃣ Hidden Portal</label>
-  <p>Locate a hidden doorway or secret corridor.</p>
-  <input type="file" accept="image/*,video/*">
-</div>
+    <div class="footer">Progress & timer auto‑save to your device • Works offline • Single‑file HTML
+      <br/>Edit the <span class="hint">items[]</span> list in the code to customize.
+    </div>
+  </div>
 
-<div class="task">
-  <label><input type="checkbox"> 3️⃣ Color Chaos</label>
-  <p>Find 3 unrelated items of the same color.</p>
-  <input type="file" accept="image/*,video/*">
-</div>
+  <div class="toast" id="toast"></div>
+  <div class="confetti" id="confetti"></div>
 
-<div class="task">
-  <label><input type="checkbox"> 4️⃣ Product Transformation</label>
-  <p>Find a product that changes form (screen, motion, or display).</p>
-  <input type="file" accept="image/*,video/*">
-</div>
+  <script>
+    // === CONFIGURABLE LIST ===
+    // Each item has title and four clue levels: gentle, spicier, bold, obvious.
+    const items = [
+      {
+        title: "A product with an impossible price",
+        clues: [
+          "Look for numbers that don't make cents.",
+          "Scan endcaps — some tags are… unreal.",
+          "Cents symbol? Infinity? You tell me.",
+          "Find a shelf tag that says $∞ or similar."
+        ]
+      },
+      {
+        title: "The wall that's not just a wall",
+        clues: [
+          "Some doors don't announce themselves.",
+          "Watch where staff seem to disappear.",
+          "Follow your curiosity behind the scenes.",
+          "Find a disguised doorway to a back area."
+        ]
+      },
+      {
+        title: "Something that hums or sings",
+        clues: [
+          "Not everything that talks has a mouth.",
+          "Quiet corners may be the loudest.",
+          "Listen near odd gadgets or displays.",
+          "Locate an exhibit that emits music or voices."
+        ]
+      },
+      {
+        title: "A hidden message in plain sight",
+        clues: [
+          "Typography can be mischievous.",
+          "Layered labels like to whisper.",
+          "Look for micro‑text or back labels.",
+          "Find tiny text or a secret note on packaging."
+        ]
+      },
+      {
+        title: "The wormhole of beverages",
+        clues: [
+          "Refreshment may be a portal.",
+          "A cooler might cool more than drinks.",
+          "Try the beverage section carefully.",
+          "Find a cooler or aisle that leads somewhere new."
+        ]
+      },
+      {
+        title: "A product that stares back at you",
+        clues: [
+          "Eye contact in a grocery store? Awkward.",
+          "Faces show up in unexpected places.",
+          "Some labels have literal eyes.",
+          "Find packaging with a face or blinking eyes."
+        ]
+      },
+      {
+        title: "A phone that shares a secret",
+        clues: [
+          "Communication lines may still be open.",
+          "Try listening devices, not just looking.",
+          "If you see a handset, pick it up.",
+          "Find a phone/intercom that plays a message."
+        ]
+      },
+      {
+        title: "A shelf that bends reality",
+        clues: [
+          "Straight lines aren't always honest.",
+          "Sightlines can warp.",
+          "Look down long aisles for odd geometry.",
+          "Find shelving that curves or distorts."
+        ]
+      },
+      {
+        title: "A tiny door or portal",
+        clues: [
+          "Not all doors are people‑sized.",
+          "Low or high, keep your eyes peeled.",
+          "Check baseboards and overhead.",
+          "Find a miniature doorway or hatch."
+        ]
+      },
+      {
+        title: "A sign that contradicts itself",
+        clues: [
+          "Instructions can be paradoxical here.",
+          "Compare the headline to the fine print.",
+          "Opposites attract (on signage).",
+          "Find a sign where the statement and details clash."
+        ]
+      },
+      {
+        title: "A product with a heartbeat",
+        clues: [
+          "Static things may pulse.",
+          "Follow the rhythm.",
+          "Dim spaces reveal movement.",
+          "Find an object that lights up or pulses."
+        ]
+      },
+      {
+        title: "A staircase that feels like a story",
+        clues: [
+          "Transitions matter.",
+          "Where paths connect, the theme changes.",
+          "Stairs may be more than steps.",
+          "Find a staircase or slide with art or lore."
+        ]
+      },
+      {
+        title: "A corporate memo gone rogue",
+        clues: [
+          "Check bulletin boards.",
+          "Look for typed notes with attitude.",
+          "Some paperwork tells on itself.",
+          "Find a memo or notice with absurd language."
+        ]
+      },
+      {
+        title: "A button you're tempted to press",
+        clues: [
+          "Choice is part of the show.",
+          "Try interactive bits.",
+          "Green means go? Maybe.",
+          "Find a pressable button or lever that does something."
+        ]
+      },
+      {
+        title: "Something that smells different",
+        clues: [
+          "Engage senses beyond sight.",
+          "Aroma can be a clue.",
+          "Near household or produce sections.",
+          "Find an installation with a distinct scent."
+        ]
+      },
+      {
+        title: "A logo that isn't the logo",
+        clues: [
+          "Branding mutates.",
+          "Compare variations.",
+          "Parodies are everywhere.",
+          "Find a spoofed or altered Omega Mart logo."
+        ]
+      },
+      {
+        title: "A corridor of lights",
+        clues: [
+          "Follow the glow.",
+          "Long exposures would love this.",
+          "It's like walking through a screen saver.",
+          "Find a tunnel or corridor with shifting lights."
+        ]
+      },
+      {
+        title: "A creature or plant that's not from here",
+        clues: [
+          "Botany went rogue.",
+          "Specimens look lively.",
+          "Bioluminescence?",
+          "Find a sculpture/plant that feels alien."
+        ]
+      },
+      {
+        title: "A barcode with a secret",
+        clues: [
+          "Lines can spell things.",
+          "Look at the numbers too.",
+          "Barcodes show jokes sometimes.",
+          "Find a barcode hiding a word or gag."
+        ]
+      },
+      {
+        title: "An instruction that backfires",
+        clues: [
+          "Warnings might invite the opposite.",
+          "Reverse psychology.",
+          "Try doing what it forbids (mentally).",
+          "Find a rule sign that is the joke."
+        ]
+      },
+      {
+        title: "A place where time is weird",
+        clues: [
+          "Clocks lie here.",
+          "Time loops in decor.",
+          "Watch for dials and calendars.",
+          "Find a room with time imagery behaving oddly."
+        ]
+      },
+      {
+        title: "A map that doesn't help",
+        clues: [
+          "Wayfinding, but make it chaos.",
+          "Arrows to nowhere.",
+          "Legend of nonsense.",
+          "Find a satirical map or directory."
+        ]
+      },
+      {
+        title: "An item that invites you to listen closely",
+        clues: [
+          "Ear to the wall.",
+          "Vents and grates whisper.",
+          "Hold still for a moment.",
+          "Find audio hidden in an object or wall."
+        ]
+      },
+      {
+        title: "A piece of lore about the company",
+        clues: [
+          "Corporate storytime.",
+          "Check posters and kiosks.",
+          "Narrative is everywhere.",
+          "Find text that explains Omega Mart's backstory."
+        ]
+      },
+      {
+        title: "A mirror that lies",
+        clues: [
+          "Reflections may be edited.",
+          "Angles matter.",
+          "Lights change what you see.",
+          "Find a reflective surface that distorts."
+        ]
+      },
+      {
+        title: "A product that sounds edible but isn't",
+        clues: [
+          "Wordplay aisle.",
+          "Punny packaging.",
+          "Check cleaning supplies.",
+          "Find a food‑sounding non‑food product."
+        ]
+      },
+      {
+        title: "A place where the ceiling steals the show",
+        clues: [
+          "Look up.",
+          "Lights, cables, or art above.",
+          "Ceilings aren't shy here.",
+          "Find overhead art worth staring at."
+        ]
+      },
+      {
+        title: "A warning about reality",
+        clues: [
+          "Fine print with existential dread.",
+          "Try product disclaimers.",
+          "Legalese goes brrr.",
+          "Find a label warning that reality may vary."
+        ]
+      }
+    ];
 
-<div class="task">
-  <label><input type="checkbox"> 5️⃣ Secret Message</label>
-  <p>Discover a hidden message or code in the store.</p>
-  <input type="file" accept="image/*,video/*">
-</div>
+    // === STATE ===
+    const STORAGE_KEY = "omega-hunt-v1";
+    const initialSeconds = 2 * 60 * 60; // 2 hours
+    let state = {
+      started: false,
+      paused: false,
+      remaining: initialSeconds,
+      done: Array(items.length).fill(false)
+    };
 
-<div class="task">
-  <label><input type="checkbox"> 6️⃣ The Portal Worker</label>
-  <p>Find an employee in costume or part of the story.</p>
-  <input type="file" accept="image/*,video/*">
-</div>
+    // Load saved state
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      if (saved && typeof saved === 'object') {
+        state = { ...state, ...saved };
+        if (!Array.isArray(state.done) || state.done.length !== items.length) {
+          state.done = Array(items.length).fill(false);
+        }
+      }
+    } catch {}
 
-<div class="task">
-  <label><input type="checkbox"> 7️⃣ Weird Art</label>
-  <p>Locate the strangest piece of art in the store.</p>
-  <input type="file" accept="image/*,video/*">
-</div>
+    // === UTIL ===
+    const $ = (sel, el=document) => el.querySelector(sel);
+    const $$ = (sel, el=document) => [...el.querySelectorAll(sel)];
+    const format = s => {
+      const h = Math.floor(s/3600).toString().padStart(2,'0');
+      const m = Math.floor((s%3600)/60).toString().padStart(2,'0');
+      const x = Math.floor(s%60).toString().padStart(2,'0');
+      return `${h}:${m}:${x}`;
+    };
+    const save = () => localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 
-<div class="task">
-  <label><input type="checkbox"> 8️⃣ Interactive Experience</label>
-  <p>Activate an interactive display (press a button, spin a wheel, scan a code).</p>
-  <input type="file" accept="image/*,video/*">
-</div>
+    function toast(msg) {
+      const t = $('#toast');
+      t.textContent = msg; t.style.display = 'block';
+      setTimeout(()=> t.style.display = 'none', 1500);
+    }
 
-<div class="task">
-  <label><input type="checkbox"> 9️⃣ Portal to Another World</label>
-  <p>Find a space that makes you feel transported to a new world.</p>
-  <input type="file" accept="image/*,video/*">
-</div>
+    function confetti() {
+      const root = $('#confetti');
+      for (let i=0;i<120;i++) {
+        const s = document.createElement('i');
+        s.style.left = Math.random()*100 + 'vw';
+        s.style.top = '-10vh';
+        s.style.background = `hsl(${Math.random()*360}, 90%, 60%)`;
+        s.style.transform = `translateY(0) rotate(${Math.random()*360}deg)`;
+        s.style.animationDelay = (Math.random()*0.8)+'s';
+        root.appendChild(s);
+        setTimeout(()=> s.remove(), 2800);
+      }
+    }
 
-<div class="task">
-  <label><input type="checkbox"> 🔟 Signature Product Selfie</label>
-  <p>Find Omega Mart’s signature weird product and take a selfie with it.</p>
-  <input type="file" accept="image/*,video/*">
-</div>
+    // === RENDER ===
+    function renderList() {
+      $('#countTotal').textContent = items.length;
+      $('#items').innerHTML = '';
 
+      items.forEach((it, idx) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+
+        const row = document.createElement('div');
+        row.className = 'item';
+
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = !!state.done[idx];
+        cb.addEventListener('change', () => {
+          state.done[idx] = cb.checked; save();
+          updateProgress();
+          toast(cb.checked ? 'Checked off!' : 'Unchecked');
+          const allDone = state.done.every(Boolean);
+          if (allDone) confetti();
+        });
+
+        const middle = document.createElement('div');
+        const title = document.createElement('div');
+        title.className = 'item-title';
+        title.textContent = it.title;
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        meta.textContent = 'Tap the toggle below to pick your clue strength.';
+        middle.appendChild(title); middle.appendChild(meta);
+
+        const toggle = document.createElement('details');
+        const sum = document.createElement('summary');
+        sum.innerHTML = '🔎 Clues';
+        toggle.appendChild(sum);
+
+        const box = document.createElement('div');
+        box.className = 'clue-box';
+
+        // segmented control
+        const seg = document.createElement('div');
+        seg.className = 'seg';
+        const levels = ['Gentle','Spicier','Bold','Obvious'];
+        let activeLevel = 0;
+        levels.forEach((lv, i) => {
+          const b = document.createElement('button');
+          b.textContent = lv;
+          if (i===0) b.classList.add('active');
+          b.addEventListener('click', (e)=>{
+            e.preventDefault();
+            activeLevel = i;
+            $$('.seg button', box).forEach(x=>x.classList.remove('active'));
+            b.classList.add('active');
+            clue.textContent = it.clues[i] || 'No clue for this level.';
+          });
+          seg.appendChild(b);
+        });
+
+        const clue = document.createElement('div');
+        clue.className = 'clue-text';
+        clue.textContent = it.clues[activeLevel] || '';
+
+        box.appendChild(seg);
+        box.appendChild(clue);
+        toggle.appendChild(box);
+
+        row.appendChild(cb);
+        row.appendChild(middle);
+        row.appendChild(toggle);
+
+        card.appendChild(row);
+        $('#items').appendChild(card);
+      });
+
+      updateProgress();
+    }
+
+    function updateProgress() {
+      const done = state.done.filter(Boolean).length;
+      $('#countDone').textContent = done;
+      const pct = Math.round((done / items.length) * 100);
+      $('#progressBar').style.width = pct + '%';
+    }
+
+    // === TIMER ===
+    let tickHandle = null;
+
+    function updateTimerUI() {
+      $('#timeLeft').textContent = format(state.remaining);
+      const pill = $('#timerPill');
+      pill.style.background = `linear-gradient(90deg, #1b1f2a, #0e1118)`;
+      if (state.remaining <= 300) {
+        pill.style.border = '1px solid rgba(255,0,0,.35)';
+      } else {
+        pill.style.border = '1px solid rgba(255,255,255,.08)';
+      }
+    }
+
+    function startTimer() {
+      if (tickHandle) return;
+      state.started = true; state.paused = false; save();
+      tickHandle = setInterval(() => {
+        if (!state.paused && state.remaining > 0) {
+          state.remaining -= 1; save();
+          updateTimerUI();
+          if (state.remaining === 0) {
+            clearInterval(tickHandle); tickHandle = null;
+            toast('Time!');
+            confetti();
+          }
+        }
+      }, 1000);
+      updateTimerUI();
+    }
+
+    function pauseTimer() { state.paused = true; save(); updateTimerUI(); }
+    function resumeTimer() { state.paused = false; save(); updateTimerUI(); }
+
+    function resetAll() {
+      if (!confirm('Reset timer and uncheck everything?')) return;
+      state = {
+        started: false,
+        paused: false,
+        remaining: initialSeconds,
+        done: Array(items.length).fill(false)
+      };
+      save();
+      if (tickHandle) { clearInterval(tickHandle); tickHandle = null; }
+      renderList();
+      updateTimerUI();
+      toast('Reset complete');
+    }
+
+    // === INIT ===
+    renderList();
+    updateTimerUI();
+
+    // restore active countdown if previously started
+    if (state.started && state.remaining > 0) {
+      startTimer();
+      if (state.paused) pauseTimer();
+    }
+
+    // Controls
+    $('#startBtn').addEventListener('click', () => {
+      if (!state.started) startTimer(); else { resumeTimer(); toast('Resumed'); }
+    });
+    $('#pauseBtn').addEventListener('click', () => { pauseTimer(); toast('Paused'); });
+    $('#resetBtn').addEventListener('click', resetAll);
+
+    // PWA-ish: prevent scroll bounce on iOS when confetti running
+    document.addEventListener('touchmove', ()=>{}, {passive:true});
+
+    // Optional: Allow long-press on an item to quickly toggle
+    $('#items').addEventListener('contextmenu', e => e.preventDefault());
+  </script>
+
+  <!--
+  DEPLOY OPTIONS (quick):
+  1) Save this file as omega-mart-hunt.html and open on your phone — it works offline.
+  2) Host it:
+     • GitHub: create a repo with this file named index.html → Settings → Pages → deploy from main → yoursite.github.io/repo
+     • Netlify: drag‑and‑drop this file to app.netlify.com → gets a "netlify.app" URL
+     • Vercel: vercel.com → "New Project" → import repo or upload → deploy
+  Customize: Edit the items[] list near the top of the script. Each item has four clue strengths.
+  -->
 </body>
 </html>
